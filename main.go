@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,6 +18,11 @@ type cleanResult struct {
 	backupPath  string
 	backupCount int
 	err         error
+}
+
+type versionInfo struct {
+	fileName string
+	version  string
 }
 
 // cleanVSSetupDir run clean function to move old version dirs in vsSetupPath to
@@ -51,48 +57,85 @@ func cleanVSSetupDir(vsSetupPath string, showActionOnly bool) *cleanResult {
 
 // backupOldVersionDirs keeps the newest version dir for each component, move elder dirs to backup path.
 func backupOldVersionDirs(result *cleanResult, list *[]fs.DirEntry, showActionOnly bool) {
-	lastFileName := ""
-	lastName := ""
-	lastVer := ""
+	dirs := make(map[string]versionInfo)
 
 	for _, fi := range *list {
 		if fi.IsDir() { // we only process dirs.
-			fileName := fi.Name()
-			name, ver := getDirInfo(fileName)
+			key, ver := getDirInfo(fi.Name())
 
-			if ver != "" { // skip dirs without version.
-				if lastName == name { // deferent version of same component dirs have same name extracted by getDirInfo().
-					// because the file name list is sorted, elder version is preceed the new one.
-					// we should never go into the other two branches.
-					if lastVer < ver {
-						if showActionOnly {
-							println("New version [", ver, "] is found, [", lastFileName, "] will be moved.")
-						} else {
-							oldPath := path.Join(result.vsPath, lastFileName)
-							newPath := path.Join(result.backupPath, lastFileName)
-
-							println("Moving ...... [", lastFileName, "]")
-							if result.err = os.Rename(oldPath, newPath); result.err != nil {
-								break
-							}
-						}
-
-						result.backupCount++
-					} else if lastVer == ver {
-						result.err = errors.New("IMPOSSIBLE: " + name + " has duplicated version " + ver + "")
-						break
-					} else {
-						result.err = errors.New("IMPOSSIBLE: " + name + " version '" + ver + "' is after " + lastName)
-						break
-					}
-				}
+			if ver == "" {
+				continue // skip dirs without version.
 			}
 
-			lastFileName = fileName
-			lastName = name
-			lastVer = ver
+			// deferent version of same component dirs have same key extracted by getDirInfo().
+			if info, ok := dirs[key]; ok {
+				compareResult := compareVersion(info.version, ver)
+
+				if compareResult < 0 {
+					// exist version is older than current one, backup exist one and save current one.
+					backupDir(result, ver, info.fileName, showActionOnly)
+				} else if compareResult > 0 {
+					// exist version is newer than current one, backup current one and no need to change the map.
+					backupDir(result, info.version, fi.Name(), showActionOnly)
+					continue
+				} else { // compareResult == 0. it should never run to here, just in case for its happening.
+					result.err = errors.New("IMPOSSIBLE: key[" + key + "], old version=" + info.version + ", new version=" + ver)
+					break
+				}
+
+				result.backupCount++
+			}
+
+			// replace exist one with newer version info or just add it when it isn't in the map.
+			dirs[key] = versionInfo{
+				fileName: fi.Name(),
+				version:  ver,
+			}
 		}
 	}
+}
+
+// backupDir moves given file to backup path.
+func backupDir(result *cleanResult, version string, fileName string, showActionOnly bool) {
+	if showActionOnly {
+		println("New version [", version, "] is found, [", fileName, "] will be moved.")
+	} else {
+		oldPath := path.Join(result.vsPath, fileName)
+		newPath := path.Join(result.backupPath, fileName)
+
+		println("Moving ...... [", fileName, "]")
+		result.err = os.Rename(oldPath, newPath)
+	}
+}
+
+// compareVersion compare two version.
+// return 1 for version1 is newer, -1 for version2 is newer, 0 for equal or something wrong.
+func compareVersion(version1 string, version2 string) int {
+	ss1 := strings.Split(version1, ".")
+	ss2 := strings.Split(version2, ".")
+
+	count := len(ss1)
+	temp := len(ss2)
+	if temp < count {
+		count = temp
+	}
+
+	for i := 0; i < count; i++ {
+		v1, err1 := strconv.Atoi(ss1[i])
+		v2, err2 := strconv.Atoi(ss2[i])
+
+		if err1 != nil || err2 != nil {
+			return 0
+		}
+
+		if v1 > v2 {
+			return 1
+		} else if v1 < v2 {
+			return -1
+		}
+	}
+
+	return 0
 }
 
 // createBackupDir creates specified root dir when showActionOnly is false.
