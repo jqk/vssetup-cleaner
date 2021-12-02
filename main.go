@@ -68,7 +68,7 @@ func backupOldVersionDirs(result *cleanResult, list *[]fs.DirEntry, showActionOn
 				continue // skip dirs without version.
 			}
 
-			// deferent version of same component dirs have same key extracted by getDirInfo().
+			// different version of same component dirs have same key extracted by getDirInfo().
 			if info, ok := dirs[key]; ok {
 				compareResult := compareVersion(info.version, ver)
 
