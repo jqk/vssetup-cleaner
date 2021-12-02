@@ -20,6 +20,7 @@ type cleanResult struct {
 	err         error
 }
 
+// versionInfo holds version information.
 type versionInfo struct {
 	fileName string
 	version  string
@@ -95,7 +96,7 @@ func backupOldVersionDirs(result *cleanResult, list *[]fs.DirEntry, showActionOn
 	}
 }
 
-// backupDir moves given file to backup path.
+// backupDir moves given dir specified by fileName to backup path.
 func backupDir(result *cleanResult, version string, fileName string, showActionOnly bool) {
 	if showActionOnly {
 		println("New version [", version, "] is found, [", fileName, "] will be moved.")
@@ -108,8 +109,9 @@ func backupDir(result *cleanResult, version string, fileName string, showActionO
 	}
 }
 
-// compareVersion compare two version.
+// compareVersion compares two version.
 // return 1 for version1 is newer, -1 for version2 is newer, 0 for equal or something wrong.
+// because given value should never be equal, so return 0 means error.
 func compareVersion(version1 string, version2 string) int {
 	ss1 := strings.Split(version1, ".")
 	ss2 := strings.Split(version2, ".")
@@ -151,9 +153,22 @@ func createBackupDir(root string, showActionOnly bool) (string, error) {
 	return dirName, err
 }
 
-// getDirInfo returns dir name without version and
-// the version info according to given dirName.
+// getDirInfo returns dir name without version segment and
+// the version string extracted from version segment.
 func getDirInfo(dirName string) (string, string) {
+	// The componet dir name is like:
+	// 1) Microsoft.Net.Core.SDK.MSBuildExtensions,version=16.11.31603.221
+	// 	  Microsoft.Net.Core.SDK.MSBuildExtensions,version=16.11.31701.289
+	// 2) AndroidNDK_R16B,version=16.0,chip=x64
+	//    AndroidNDK_R16B,version=16.0,chip=x86
+	// The version number was preceded by 'version='.
+	// A few directory names do not have a version number, such as `certificates`.
+	// Return values for group 1 are:
+	//    "Microsoft.Net.Core.SDK.MSBuildExtensions,", "16.11.31603.221"
+	//    "Microsoft.Net.Core.SDK.MSBuildExtensions,", "16.11.31701.289"
+	// Return values for group 2 are:
+	//	  "AndroidNDK_R16B,chip=x64,", "16.0"
+	//	  "AndroidNDK_R16B,chip=x86,", "16.0"
 	ss := strings.Split(dirName, ",")
 	ver := ""
 	name := ""
