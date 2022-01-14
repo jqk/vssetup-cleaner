@@ -41,7 +41,7 @@ vs_Community.exe --layout "f:\Software\vs2019-community"
 
 本项目即用来清理这些目录：
 
-- 首先以当前时间，建立包为`yyyy-mm-dd_ HH-MM-ss`的备份目录。
+- 首先以当前时间，建立包为`yyyy-mm-dd_HH-MM-ss`的备份目录。
 - 然后将旧版组件目录移动到该备份目录中。
 - 确保无误后，人工删除备份目录以释放磁盘空间。
 
@@ -70,6 +70,20 @@ go run main.go --path 你自己的VS安装包目录
 Microsoft.AspNetCore.SharedFramework.2.1.2.1.29,version=16.11.31603.221,chip=x64
 Microsoft.AspNetCore.SharedFramework.2.1.2.1.30,version=16.11.31701.289,chip=x64
 Microsoft.AspNetCore.SharedFramework.2.2.2.2.8,version=16.10.31205.180,chip=x64
+Microsoft.AspNetCore.SharedFramework.3.0.3.0.3.x64,version=16.10.31205.180,chip=x64
+.....
+.....
+Microsoft.AspNetCore.SharedFramework.3.1.3.1.18-servicing.21365.4.x86,version=16.11.31603.221
+Microsoft.AspNetCore.SharedFramework.3.1.3.1.19-servicing.21417.13.x86,version=16.11.31701.289
+Microsoft.AspNetCore.SharedFramework.3.1.3.1.20-servicing.21472.42.x86,version=16.11.31729.444
+Microsoft.AspNetCore.SharedFramework.3.1.3.1.21-servicing.21523.9.x86,version=16.11.31828.110
+Microsoft.AspNetCore.SharedFramework.3.1.3.1.22-servicing.21579.4.x86,version=16.11.32002.110
+.....
+Microsoft.AspNetCore.SharedFramework.5.0.5.0.9-servicing.21365.3.x86,version=16.11.31603.221
+Microsoft.AspNetCore.SharedFramework.5.0.5.0.10-servicing.21410.22.x86,version=16.11.31701.289
+Microsoft.AspNetCore.SharedFramework.5.0.5.0.11-servicing.21476.5.x86,version=16.11.31729.444
+Microsoft.AspNetCore.SharedFramework.5.0.5.0.12-servicing.21524.1.x86,version=16.11.31828.110
+Microsoft.AspNetCore.SharedFramework.5.0.5.0.13-servicing.21572.2.x86,version=16.11.32002.110
 ```
 
 除我们处理的由`version`指定的版本外，还有针对其它框架的版本。

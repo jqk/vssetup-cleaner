@@ -26,6 +26,10 @@ type versionInfo struct {
 	version  string
 }
 
+const version_is_newer = 1
+const version_is_older = -1
+const version_is_error = 0
+
 // cleanVSSetupDir run clean function to move old version dirs in vsSetupPath to
 // a backup path.
 func cleanVSSetupDir(vsSetupPath string, showActionOnly bool) *cleanResult {
@@ -47,7 +51,7 @@ func cleanVSSetupDir(vsSetupPath string, showActionOnly bool) *cleanResult {
 		return result
 	}
 
-	// create backup dir just inside give visual studio setup path.
+	// create backup dir just inside given visual studio setup path.
 	if result.backupPath, result.err = createBackupDir(vsSetupPath, showActionOnly); result.err != nil {
 		return result
 	}
@@ -61,7 +65,8 @@ func backupOldVersionDirs(result *cleanResult, list *[]fs.DirEntry, showActionOn
 	dirs := make(map[string]versionInfo)
 
 	for _, fi := range *list {
-		if fi.IsDir() { // we only process dirs.
+		if fi.IsDir() {
+			// we only process dirs. try to get the version of current dir.
 			key, ver := getDirInfo(fi.Name())
 
 			if ver == "" {
@@ -79,7 +84,8 @@ func backupOldVersionDirs(result *cleanResult, list *[]fs.DirEntry, showActionOn
 					// exist version is newer than current one, backup current one and no need to change the map.
 					backupDir(result, info.version, fi.Name(), showActionOnly)
 					continue
-				} else { // compareResult == 0. it should never run to here, just in case for its happening.
+				} else {
+					// compareResult == 0. it should never run to here, just in case for its happening.
 					result.err = errors.New("IMPOSSIBLE: key[" + key + "], old version=" + info.version + ", new version=" + ver)
 					break
 				}
@@ -113,31 +119,46 @@ func backupDir(result *cleanResult, version string, fileName string, showActionO
 // return 1 for version1 is newer, -1 for version2 is newer, 0 for equal or something wrong.
 // because given value should never be equal, so return 0 means error.
 func compareVersion(version1 string, version2 string) int {
+	// versions are 3 or 4 numbers separated by dot.
 	ss1 := strings.Split(version1, ".")
 	ss2 := strings.Split(version2, ".")
 
-	count := len(ss1)
-	temp := len(ss2)
-	if temp < count {
-		count = temp
+	len1 := len(ss1)
+	len2 := len(ss2)
+
+	result := version_is_error // default return value.
+	count := len1              // count of numbers should compare between two versions.
+
+	if len1 > len2 {
+		// version1 has more numbers than version2. it may contains version2.
+		// version1 is newer if it contains version2.
+		result = version_is_newer
+
+		// only check for same length.
+		count = len2
+	} else if len1 < len2 {
+		// version2 is newer if it contains version1.
+		result = version_is_older
 	}
 
 	for i := 0; i < count; i++ {
+		// we must convert string to int because '16' is less than '2',
+		// but 16 is greater than 2.
 		v1, err1 := strconv.Atoi(ss1[i])
 		v2, err2 := strconv.Atoi(ss2[i])
 
 		if err1 != nil || err2 != nil {
-			return 0
+			return version_is_error
 		}
 
 		if v1 > v2 {
-			return 1
+			return version_is_newer
 		} else if v1 < v2 {
-			return -1
+			return version_is_older
 		}
 	}
 
-	return 0
+	return result
 }
 
 // createBackupDir creates specified root dir when showActionOnly is false.
@@ -189,11 +210,18 @@ func getDirInfo(dirName string) (string, string) {
 }
 
 func main() {
-	setupPath := flag.String("path", ".", "Visualt Studio's setup path")
-	showActionOnly := flag.Bool("showonly", false, "Show process only, no real action")
+	setupPath := flag.String("path", ".", "Visual Studio's setup path")
+	showActionOnly := flag.Bool("showonly", false, "Show action only")
+	useCheckList := flag.Bool("usechecklist", true, "Check old version with check list")
 	flag.Parse()
 
-	result := cleanVSSetupDir(*setupPath, *showActionOnly)
+	var result *cleanResult
+
+	if useCheckList {
+		//
+	} else {
+		result = cleanVSSetupDir(*setupPath, *showActionOnly)
+	}
 
 	if result.err != nil {
 		println("-----------------------------------")

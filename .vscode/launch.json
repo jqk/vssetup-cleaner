@@ -11,8 +11,8 @@
       "mode": "auto",
       "program": "${workspaceFolder}",
       "env": {},
-      //"args": ["--path", "E:\\Temp\\vs", "--showonly", "false"]
-      "args": []
+      "args": ["--path", "f:\\Software\\vs2019-community", "--showonly", "true"]
+      //"args": []
     }
   ]
 }
