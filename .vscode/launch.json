@@ -11,7 +11,8 @@
       "mode": "auto",
       "program": "${workspaceFolder}",
       "env": {},
-      "args": ["--path", "f:\\Software\\vs2019-community", "--showonly", "true"]
+      //"args": ["-vs=f:\\Software\\vs2019-community", "--pkg=e:\\vs16.8.txt", "-show=false"]
+      "args": ["-vs=f:\\Software\\vs2019-community", "--pkg=e:\\vs16.8.txt"]
       //"args": []
     }
   ]
