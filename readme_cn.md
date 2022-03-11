@@ -46,21 +46,19 @@ Usage of vssetup-cleaner.exe:
         Visual Studio's setup path (default ".")
 ```
 
-当忽略pkg或将其设置为空字符串时，将使用[版本1的操作逻辑](readme_cn_v1.md)。
+当忽略 pkg 或将其设置为空字符串时，将使用[版本 1 的操作逻辑](readme_cn_v1.md)。
 
 ### 2.2 执行过程
 
 执行过程如下：
 
-1. 执行`vs_community.exe --layout "f:\Software\vs2019-community"`下载本地安装包。
-2. 执行`vs_setup.exe`进行安装。
-3. 通常运行`VS2019`会自动发现新的小版本。**此时不更新**。
-4. 执行`vs_community.exe --layout "f:\Software\vs2019-community"`下载新版本发生变动的组件包。
-5. 如果中断或有其它错误发生，反复执行以上命令直到所有新的组件包全部下载完毕。
-6. 再次执行`vs_community.exe --layout "f:\Software\vs2019-community"`会检查一遍组件包是否完整。所有组件都被列在命令行窗口中。通过复制、粘贴的方式，将这总分内容保存到文本文件中，例如`e:\temp\list.txt`。该文件即为`vssetup-cleaner.exe`的`pkg`参数所需的`package list file`。
-7. 执行`vssetup-cleaner.exe -pkg="e:\temp\list.txt" -vs="f:\Software\vs2019-community" -show=false`会将`f:\Software\vs2019-community`中的目录与`e:\temp\list.txt`中的组件名作对比，将过期不用的组件目录移动到`f:\Software\vs2019-community`下的`_yyyy-mm-dd_HH-MM-ss`备份目录中。
-8. 再次执行`vs_community.exe --layout "f:\Software\vs2019-community"`会检查一遍组件包是否完整。如果没有问题，可以手工删除备份目录。
-9. 执行`vs_setup.exe`安装更新即可。
+1. 通常运行 `VS2019` 会自动发现新的小版本。**此时不更新**。
+1. 执行 `vs_community.exe --layout "f:\Software\vs2019-community"` 下载新版本发生变动的组件包。注意引号内的是安装程序路径。
+1. 如果中断或有其它错误发生，反复执行以上命令直到所有新的组件包全部下载完毕。
+1. 再次执行 `vs_community.exe --layout "f:\Software\vs2019-community"` 会检查一遍组件包是否完整。所有组件都被列在命令行窗口中。通过复制、粘贴（`Ctrl + A`，`Ctrl + C`从窗口中选择复制，再粘贴到文本文件中）的方式，将这总分内容保存到文本文件中，例如 `e:\temp\list.txt` 。该文件即为 `vssetup-cleaner.exe` 的 `pkg` 参数所需的 `package list file`。
+1. 执行 `vssetup-cleaner.exe -pkg="e:\temp\list.txt" -vs="f:\Software\vs2019-community" -show=false` 会将 `f:\Software\vs2019-community` 中的目录与 `e:\temp\list.txt` 中的组件名作对比，将过期不用的组件目录移动到 `f:\Software\vs2019-community` 下的 `_yyyy-mm-dd_HH-MM-ss` 备份目录中。
+1. 再次执行 `vs_community.exe --layout "f:\Software\vs2019-community"` 会检查一遍组件包是否完整。如果没有问题，可以手工删除备份目录。其实，本步可选。
+1. 执行 `vs_setup.exe` 安装更新即可。此时仍然会提示下载更新包，但点击继续后，下载过程瞬间完成。此操作支持离线更新。
 
 对 Visual Studio 2019 community 16.9 安装包运行此程序后，释放了 6.4 GB 的空间。
 

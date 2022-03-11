@@ -12,7 +12,7 @@
       "program": "${workspaceFolder}",
       "env": {},
       //"args": ["-vs=f:\\Software\\vs2019-community", "--pkg=e:\\vs16.8.txt", "-show=false"]
-      "args": ["-vs=f:\\Software\\vs2019-community", "--pkg=e:\\vs16.8.txt"]
+      "args": ["-vs=f:\\Software\\vs2019-community", "--pkg=z:\\vs.txt"]
       //"args": []
     }
   ]
