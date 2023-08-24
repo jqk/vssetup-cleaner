@@ -2,167 +2,60 @@ package main
 
 import (
 	"errors"
-	"io/fs"
 	"os"
-	"path"
-	"strconv"
-	"strings"
+
+	"github.com/jqk/futool4go/common"
 )
 
-// versionInfo holds version information.
-type versionInfo struct {
-	fileName string
-	version  string
-}
+/*
+FindOldPackagesByDirVersion find old packages in given dir list.
 
-const version_is_newer = 1
-const version_is_older = -1
-const version_is_error = 0
-
-// CleanVSSetupDir run clean function to move old version dirs in vsSetupPath to
-// a backup path.
-func CleanVSSetupDir(vsSetupPath string, showActionOnly bool) *CleanResult {
-	result, list := PrepareEnvironment(vsSetupPath, showActionOnly)
-	if result.err != nil {
-		return result
+FindOldPackagesByDirVersion 在给定的目录列表中查找过期的包。
+*/
+func FindOldPackagesByDirVersion(vsSetupPath string) ([]*PackageInfo, error) {
+	// 读取 vsSetupPath 下的目录列表。
+	packageDirs, err := os.ReadDir(vsSetupPath)
+	if err != nil {
+		return nil, err
 	}
 
-	backupOldVersionDirs(result, list, showActionOnly)
-	return result
-}
+	// VS 安装目录下一般有 3000 多个包。每个小版本更新其中的数十个。给数组预先分配一些空间。
+	oldPackages := make([]*PackageInfo, 0, 100)      // 过期包集合。
+	currentPackages := make(map[string]*PackageInfo) // 当前包集合。以包名为 key，存储包信息。
 
-// backupOldVersionDirs keeps the newest version dir for each component, move elder dirs to backup path.
-func backupOldVersionDirs(result *CleanResult, list *[]fs.DirEntry, showActionOnly bool) {
-	dirs := make(map[string]versionInfo)
-
-	for _, fi := range *list {
-		if fi.IsDir() {
-			// we only process dirs. try to get the version of current dir.
-			key, ver := getDirInfo(fi.Name())
-
-			if ver == "" {
-				continue // skip dirs without version.
+	for _, dir := range packageDirs {
+		if dir.IsDir() { // we only process dirs.
+			nextPack := getPackageInfo(dir.Name())
+			if nextPack == nil {
+				continue
 			}
 
-			// different version of same component dirs have same key extracted by getDirInfo().
-			if info, ok := dirs[key]; ok {
-				compareResult := compareVersion(info.version, ver)
+			if currentPack, ok := currentPackages[nextPack.Name]; !ok {
+				// 在当前包集合内，没有找到刚刚从目录包转换得到的包信息。需将其添加到当前包集合。
+				currentPackages[nextPack.Name] = nextPack
+			} else {
+				// 当前包集合内已存在刚刚从目录包转换得到的同名包信息，则需要比较版本。
+				compareResult := common.CompareVersions(currentPack.Version, nextPack.Version)
 
 				if compareResult < 0 {
-					// exist version is older than current one, backup exist one and save current one.
-					backupDir(result, ver, info.fileName, showActionOnly)
+					// current version is older than the next one.
+					// move current package info to obsolete package list.
+					// and save next package info to current package list.
+					oldPackages = append(oldPackages, currentPack)
+					currentPackages[nextPack.Name] = nextPack
 				} else if compareResult > 0 {
-					// exist version is newer than current one, backup current one and no need to change the map.
-					backupDir(result, info.version, fi.Name(), showActionOnly)
-					continue
+					// current version is newer than the next one.
+					// it should not happened becase the packageDirs is sorted by os.ReadDir().
+					// but, in case it is happening, keep the code below. no need to change currentPackages.
+					oldPackages = append(oldPackages, nextPack)
 				} else {
-					// compareResult == 0. it should never run to here, just in case for its happening.
-					result.err = errors.New("IMPOSSIBLE: key[" + key + "], old version=" + info.version + ", new version=" + ver)
-					break
+					// the 2 versions are identical. it should never run to here.
+					return nil, errors.New("Duplicated packages: " + nextPack.Name + ", old version=" +
+						currentPack.Version + ", new version=" + nextPack.Version)
 				}
-
-				result.backupCount++
-			}
-
-			// replace exist one with newer version info or just add it when it isn't in the map.
-			dirs[key] = versionInfo{
-				fileName: fi.Name(),
-				version:  ver,
 			}
 		}
 	}
-}
 
-// backupDir moves given dir specified by fileName to backup path.
-func backupDir(result *CleanResult, version string, fileName string, showActionOnly bool) {
-	if showActionOnly {
-		println("New version [", version, "] is found, [", fileName, "] will be moved.")
-	} else {
-		oldPath := path.Join(result.vsPath, fileName)
-		newPath := path.Join(result.backupPath, fileName)
-
-		println("Moving ...... [", fileName, "]")
-		result.err = os.Rename(oldPath, newPath)
-	}
-}
-
-// compareVersion compares two version.
-// return 1 for version1 is newer, -1 for version2 is newer, 0 for equal or something wrong.
-// because given value should never be equal, so return 0 means error.
-func compareVersion(version1 string, version2 string) int {
-	// versions are 3 or 4 numbers separated by dot.
-	ss1 := strings.Split(version1, ".")
-	ss2 := strings.Split(version2, ".")
-
-	len1 := len(ss1)
-	len2 := len(ss2)
-
-	result := version_is_error // default return value.
-	count := len1              // count of numbers should compare between two versions.
-
-	if len1 > len2 {
-		// version1 has more numbers than version2. it may contains version2.
-		// version1 is newer if it contains version2.
-		result = version_is_newer
-
-		// only check for same length.
-		count = len2
-	} else if len1 < len2 {
-		// version2 is newer if it contains version1.
-		result = version_is_older
-	}
-
-	for i := 0; i < count; i++ {
-		// we must convert string to int because '16' is less than '2',
-		// but 16 is greater than 2.
-		v1, err1 := strconv.Atoi(ss1[i])
-		v2, err2 := strconv.Atoi(ss2[i])
-
-		if err1 != nil || err2 != nil {
-			return version_is_error
-		}
-
-		if v1 > v2 {
-			return version_is_newer
-		} else if v1 < v2 {
-			return version_is_older
-		}
-	}
-
-	return result
-}
-
-// getDirInfo returns dir name without version segment and
-// the version string extracted from version segment.
-func getDirInfo(dirName string) (string, string) {
-	// The componet dir name is like:
-	// 1) Microsoft.Net.Core.SDK.MSBuildExtensions,version=16.11.31603.221
-	// 	  Microsoft.Net.Core.SDK.MSBuildExtensions,version=16.11.31701.289
-	// 2) AndroidNDK_R16B,version=16.0,chip=x64
-	//    AndroidNDK_R16B,version=16.0,chip=x86
-	// The version number was preceded by 'version='.
-	// A few directory names do not have a version number, such as `certificates`.
-	// Return values for group 1 are:
-	//    "Microsoft.Net.Core.SDK.MSBuildExtensions,", "16.11.31603.221"
-	//    "Microsoft.Net.Core.SDK.MSBuildExtensions,", "16.11.31701.289"
-	// Return values for group 2 are:
-	//	  "AndroidNDK_R16B,chip=x64,", "16.0"
-	//	  "AndroidNDK_R16B,chip=x86,", "16.0"
-	ss := strings.Split(dirName, ",")
-	ver := ""
-	name := ""
-
-	for _, s := range ss {
-		if strings.Contains(s, "version=") {
-			vv := strings.Split(s, "=")
-
-			if len(vv) >= 2 {
-				ver = vv[1]
-			}
-		} else {
-			name += s + ","
-		}
-	}
-
-	return name, ver
+	return oldPackages, nil
 }

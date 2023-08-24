@@ -3,72 +3,52 @@ package main
 import (
 	"bufio"
 	"os"
-	"path"
 	"strings"
 )
 
-// packageList is used as a list.
-type packageList map[string]bool
+/*
+FindOldPackagesByFileList find old packages according to package list file.
 
-// not_a_package is the symbol that it is not a package name.
-const not_a_package = ""
-
-// CleanVSSetupDirWithCheckFile run clean function to move old version dirs in vsSetupPath to
-// a backup path according to vs_installer checking result.
-func CleanVSSetupDirWithCheckFile(vsSetupPath string, showActionOnly bool, packageListFile string) *CleanResult {
-	result, list := PrepareEnvironment(vsSetupPath, showActionOnly)
-	if result.err != nil {
-		return result
+FindOldPackagesByFileList 以目录列表中给出的包为基础，查找指定目录下过期的包。
+*/
+func FindOldPackagesByFileList(vsSetupPath string, listFilename string) ([]*PackageInfo, error) {
+	// 读取 vsSetupPath 下的目录列表。
+	packageDirs, err := os.ReadDir(vsSetupPath)
+	if err != nil {
+		return nil, err
 	}
 
-	// read package list file.
-	var packages packageList
-	if packages, result.err = readPackageListFile(packageListFile); result.err != nil {
-		return result
+	packages, err := readPackageListFile(listFilename)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, fn := range *list {
+	// VS 安装目录下一般有 3000 多个包。每个小版本更新其中的数十个。给数组预先分配一些空间。
+	result := make([]*PackageInfo, 0, 100)
+
+	for _, fn := range packageDirs {
 		if fn.IsDir() { // we only process dirs.
 			dirName := fn.Name()
 
 			// ok == false means the dir in setup path is not in the package list.
 			// it should be moved out in most cases.
 			if _, ok := packages[dirName]; !ok {
-				// 'Archive' is the install history. It is removable, but please do it manually.
-				// I think we should leave 'certificates' there although I haven't tried it yet.
-				// Dir starts with '_' is the backup directory. Remove it manually.
-				if dirName == "Archive" || dirName == "certificates" || strings.Index(dirName, "_") == 0 {
+				pkg := getPackageInfo(dirName)
+				if pkg == nil {
 					continue
 				}
 
-				// dirs that are not in the package list will be moved out.
-				if backupAbandonedPackage(result, dirName, showActionOnly); result.err != nil {
-					break
-				}
-
-				result.backupCount++
+				// 目录具有版本信息，但又不在包列表中。这个目录应该被移除。
+				result = append(result, pkg)
 			}
 		}
 	}
 
-	return result
-}
-
-// backupAbandonedPackage moves abandoned packages to backupDir.
-func backupAbandonedPackage(result *CleanResult, packageName string, showActionOnly bool) {
-	if showActionOnly {
-		println("Abandoned package [", packageName, "] will be moved.")
-	} else {
-		oldPath := path.Join(result.vsPath, packageName)
-		newPath := path.Join(result.backupPath, packageName)
-
-		println("Moving package ...... [", packageName, "]")
-		result.err = os.Rename(oldPath, newPath)
-	}
+	return result, nil
 }
 
 // readPackageListFile reads package list file create by vs_layout.exe.
-func readPackageListFile(filename string) (packageList, error) {
+func readPackageListFile(filename string) (map[string]bool, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -77,14 +57,14 @@ func readPackageListFile(filename string) (packageList, error) {
 
 	// by visual studio version 16.8 (2019), the package list file has 3633 lines.
 	// give it a little bit more space.
-	list := make(packageList, 4000)
+	list := make(map[string]bool, 4000)
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
 		line := scanner.Text()       // read a text line.
 		path := getPackagePath(line) // analyse it, get package name.
 
-		if path != not_a_package {
+		if path != notPackage {
 			list[path] = true // save package name to the list.
 		}
 	}
@@ -96,20 +76,23 @@ func readPackageListFile(filename string) (packageList, error) {
 	return list, nil
 }
 
+const packageHeader = "Verified existing package '"
+const packageHeaderLenght = len(packageHeader)
+const notPackage = ""
+
 // getPackagePath get package name as the result, otherwise returns empty string.
 func getPackagePath(line string) string {
-	if strings.Index(line, "Verified existing package '") == 0 {
-		// each line is like below:
-		// Verified existing package 'Unity3d.x86,version=3.1,chip=x86'
-		// the package name is the dir name, quoted with "'".
-		start := 27 // the length of "Verified existing package '". calculated manually.
+	// each line is like below:
+	// Verified existing package 'Unity3d.x86,version=3.1,chip=x86'
+	// the package name is the dir name, quoted with "'".
+	if strings.Index(line, packageHeader) == 0 {
 		end := strings.LastIndex(line, "'")
 
-		if end > start {
-			s := line[start:end]
+		if end > packageHeaderLenght {
+			s := line[packageHeaderLenght:end]
 			return s
 		}
 	}
 
-	return not_a_package
+	return notPackage
 }
