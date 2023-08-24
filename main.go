@@ -1,57 +1,106 @@
 package main
 
 import (
-	"flag"
+	"errors"
+	"os"
+	"strings"
 )
 
 func main() {
-	const no_package_list_file = ""
-
-	setupPath := flag.String("vs", ".", "Visual Studio's setup path")
-	showActionOnly := flag.Bool("show", true, "Show action only")
-	packageListFile := flag.String("pkg", no_package_list_file, "package list file")
-	flag.Parse()
-
-	println("Visual Studio setup file cleaner 1.0.0\n")
-	println("  Arguments from command line or default value:")
-	println("    pkg  = ", *packageListFile)
-	println("    show = ", *showActionOnly)
-	println("    vs   = ", *setupPath)
-	println("\n---------------------------------------")
-
-	var result *CleanResult
-
-	if *packageListFile == no_package_list_file {
-		result = CleanVSSetupDir(*setupPath, *showActionOnly)
-	} else {
-		result = CleanVSSetupDirWithCheckFile(*setupPath, *showActionOnly, *packageListFile)
+	argCount := len(os.Args)
+	if argCount == 1 {
+		showHelp()
+		os.Exit(0)
 	}
 
-	if result.err != nil {
-		println("---------------------------------------")
-		println("Clean Visual Studio setup dir fail:\n", result.err.Error())
-		println("---------------------------------------")
-	} else {
-		if result.backupCount > 0 {
-			println("\n---------------------------------------\n")
+	c, err := parseArguments(os.Args)
+	if err != nil {
+		showError(err)
+		showHelp()
+		os.Exit(0)
+	}
+
+	cleanInfo, err := Clean(c.setupPath, c.listFilename, showObsoletePackage, c.showOnly, c.needDirStat)
+	if err != nil {
+		showError(err)
+		os.Exit(1)
+	}
+
+	showCleanInfo(cleanInfo)
+	os.Exit(0)
+}
+
+type cmdArg struct {
+	setupPath    string
+	listFilename string
+	showOnly     bool
+	needDirStat  bool
+}
+
+func parseOption(option string) (showOnly bool, needDirStat bool, hasOption bool, err error) {
+	// 默认值。
+	showOnly = true
+	needDirStat = true
+	hasOption = false
+	err = nil
+
+	if len(option) != 3 {
+		return
+	}
+
+	hasOption = true
+	option = strings.ToLower(option)
+
+	switch option {
+	case "-tt":
+		// 使用默认值。
+	case "-tf":
+		needDirStat = false
+	case "-ft":
+		showOnly = false
+	case "-ff":
+		showOnly = false
+		needDirStat = false
+	default:
+		err = errors.New("invalid option")
+	}
+
+	return
+}
+
+func parseArguments(args []string) (cmd *cmdArg, err error) {
+	n := len(args)
+	if n > 4 {
+		return nil, errors.New("too many arguments")
+	}
+
+	var hasOption bool
+	cmd = &cmdArg{
+		listFilename: "", // 显示地初始化。
+	}
+	if cmd.showOnly, cmd.needDirStat, hasOption, err = parseOption(args[1]); err != nil {
+		return
+	}
+
+	if hasOption {
+		if n == 2 {
+			return nil, errors.New("visual studio setup path must be specified")
 		}
-		println("Clean Visual Studio setup dir finished.")
-		println("Visual Studio setup path is [", result.vsPath, "].")
-		println("Old version packages will be moved to [", result.backupPath, "].")
 
-		if result.backupCount == 0 {
-			println("Old version package is not found. Nothing to do.\n")
-		} else {
-			packageWord := "packages"
-			if result.backupCount == 1 {
-				packageWord = "package"
-			}
+		cmd.setupPath = os.Args[2] // n == 3 || n == 4
+		if n == 4 {
+			cmd.listFilename = os.Args[3]
+		}
+	} else { // option 使用了默认值。
+		if n == 4 {
+			return nil, errors.New("too many arguments")
+		}
 
-			if *showActionOnly {
-				println(result.backupCount, "old version", packageWord, "will be moved.\n")
-			} else {
-				println(result.backupCount, "old version", packageWord, "have been moved.\n")
-			}
+		cmd.setupPath = os.Args[1] // n == 2 || n == 3
+		if n == 3 {
+			cmd.listFilename = os.Args[2]
 		}
 	}
+
+	return
 }
