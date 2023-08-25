@@ -24,7 +24,7 @@ func showVersion() {
 func showHelp() {
 	yellow.Println("Usage:")
 	yellow.Println("  vssc [option] <path/to/visual studio setup> [path/to/package list]")
-	white.Println("        clear obsolete Visual Studio Setup packages")
+	white.Println("       clear obsolete Visual Studio Setup packages")
 	yellow.Println("\nCommand:")
 	white.Println("  The first character of the option determines whether to only show the result or execute the real action.")
 	white.Println("  The second one defines whether to statistic the directory of obsolete packages or not.")

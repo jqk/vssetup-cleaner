@@ -19,7 +19,8 @@ Parameters:
   - setupPath: The path of the Visual Studio Setup.
   - listFilename: The path of the package list file.
   - handler: The callback function for handling expired packages. Cannot be nil.
-  - flag: Optional parameters. At most 2 in order corresponding to showOnly and needDirStat, both default to true.
+  - showOnly: Whether show obsolete package or do the real clean action.
+  - needDirStat: Whether to statistic directories.
 
 Returns:
   - Information about the cleaning process.
@@ -31,19 +32,24 @@ Clean 用于清理 Visual Studio Setup 目录中的过期包。
   - setupPath: Visual Studio Setup 的路径。
   - listFilename: 包列表文件的路径。
   - handler: 处理过期包的回调函数。不能为 nil。
-  - flag: 可选参数。最多 2 个，按顺序对应 showOnly 和 needDirStat，均默认为 true。
+  - showOnly: 是否仅显示处理过程。
+  - needDirStat: 是否需要统计目录数量、文件大小。
 
 返回:
   - 清理过程的信息。
   - 错误。如果 handler 返回 SkipAll 或 SkipDir，则返回 nil。
 */
-func Clean(setupPath string, listFilename string, handler ObsoletePackageHandler, flag ...bool) (*CleanInfo, error) {
+func Clean(
+	setupPath string,
+	listFilename string,
+	handler ObsoletePackageHandler,
+	showOnly bool,
+	needDirStat bool) (*CleanInfo, error) {
+
 	useListFile := strings.TrimSpace(listFilename) != ""
 	if err := varifyParameters(setupPath, listFilename, handler, useListFile); err != nil {
 		return nil, err
 	}
-
-	showOnly, needDirStat := parseFlag(flag...)
 
 	info := &CleanInfo{}
 	// 将可能的相对路径转换为绝对路径，并创建备份目录名称。
@@ -121,7 +127,7 @@ func varifyParameters(setupPath string, listFilename string, handler ObsoletePac
 	if exists, isDir, err := fileutils.FileExists(setupPath); err != nil {
 		return err
 	} else if !exists || !isDir {
-		return errors.New("invalid Visual Studio SetupPath: " + setupPath)
+		return errors.New("invalid Visual Studio setup path: " + setupPath)
 	}
 
 	if useListFile {
@@ -134,18 +140,4 @@ func varifyParameters(setupPath string, listFilename string, handler ObsoletePac
 	}
 
 	return nil
-}
-
-func parseFlag(flag ...bool) (showOnly bool, needDirStat bool) {
-	n := len(flag)
-	showOnly = true
-	needDirStat = true
-	if n > 0 {
-		showOnly = flag[0]
-	}
-	if n > 1 {
-		needDirStat = flag[1]
-	}
-
-	return showOnly, needDirStat
 }

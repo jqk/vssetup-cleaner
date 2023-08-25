@@ -11,10 +11,10 @@
       "mode": "auto",
       "program": "${workspaceFolder}",
       "env": {},
-      //"args": ["-vs=f:\\Software\\vs2019-community", "--pkg=e:\\vs16.8.txt", "-show=false"]
-      //"args": ["-vs=f:\\Software\\vs2019-community", "--pkg=z:\\vs.txt"]
-      //"args": ["-vs=f:\\Software\\vs2019-community", "-show=false"]
-      "args": []
+      //"args": ["-ft", "F:\\Software\\vs2019-community"]
+      //"args": ["-ff", "F:\\Software\\vs2019-community", "z:\\list.txt"]
+      "args": ["F:\\Software\\vs2019-community"]
+      //"args": []
     }
   ]
 }

@@ -10,7 +10,7 @@ var packages []*PackageInfo = make([]*PackageInfo, 0, 2)
 
 func TestClean(t *testing.T) {
 	packages = packages[0:0]
-	info, err := Clean("test-data", "", packageHandler, true)
+	info, err := Clean("test-data", "", packageHandler, true, true)
 	assert.Nil(t, err)
 	assert.NotNil(t, info)
 	assert.Equal(t, len(info.Packages), len(packages))
@@ -21,7 +21,7 @@ func TestClean(t *testing.T) {
 	assert.Equal(t, int64(0), info.Packages[1].Size)
 
 	packages = packages[0:0]
-	info, err = Clean("test-data", "test-data/certificates/packageList.txt", packageHandler, true)
+	info, err = Clean("test-data", "test-data/certificates/packageList.txt", packageHandler, true, false)
 	assert.Nil(t, err)
 	assert.NotNil(t, info)
 	assert.Equal(t, len(info.Packages), len(packages))
