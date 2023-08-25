@@ -2,7 +2,15 @@
 
 [English](readme.md)
 
-## 一、 解决什么问题
+## 一、 Visual Studio Setup Cleaner
+
+Visual Studio setup cleaner (vssc) 是清理 Visual Studo 过期安装包的命令行工具。
+
+仅在 Windows 10/11 下针对 Visual Studio 2019 Community 测试过。理论上可以处理 2017 至 2022 的所有版本。
+
+因为使用 go 编写，且未使用与操作系统相关的特有功能，所以应也可在 Mac 上运行。
+
+## 二、 解决什么问题
 
 我们有两种安装 Visual Studio 的方法：
 
@@ -19,47 +27,72 @@
 vs_community.exe --layout "f:\Software\vs2019-community"
 ```
 
-- `vs_community.exe`不需要最新，因为它会自动下载最新的`vs_layout.exe`并运行。
-- `f:\Software\vs2019-community`安装包所在目录，应该根据实际情况填写。
+- `vs_community.exe` 不需要最新，它会自动下载最新的 `vs_layout.exe` 并运行。
+- `f:\Software\vs2019-community` 安装包所在目录，应该根据实际情况填写。
 
 以上命令即可只下载更新了的组件，比下载整个版本快很多。
 
-但这样操作**不会删除旧版的、不再使用的组件目录**，导致`f:\Software\vs2019-community`越来越大。
+但这样操作**不会删除旧版的、不再使用的组件目录**，导致 `f:\Software\vs2019-community` 越来越大。
 
-本程序即删除这些不再使用的组件。这些组件被移动到根据当前时间生成的格式为`_yyyy-mm-dd_HH-MM-ss`的备份目录中。检查无误后可以手动删除。
+`vssc` 即查找这些不再使用的组件，并将这些组件移动到根据当前时间生成的格式为`_yyyy-mm-dd_HH-MM-ss`的备份目录中。检查无误后可以手动删除。
 
-## 二、 如何使用
+## 三、 安装
 
-### 2.1 Visual Studio setup cleaner
+有两种方法进行安装：
 
-- 下载代码。
-- 编译并执行：`vssetup-cleaner.exe -h`显示程序可使用的参数。
+1. 可以从 <https://github.com/jqk/vssetup-cleaner/releases> 下载程序包，解压后直接运行。
+2. 使用 [scoop](https://github.com/ScoopInstaller/Scoop) 。在安装完 scoop 后执行：
+   - `scoop bucket add ajqk https://github/jqk/scoopbucket`
+   - `scoop install vssc`
 
-```cmd
-vssetup-cleaner.exe -h
-Usage of vssetup-cleaner.exe:
-  -pkg string
-        package list file
-  -show
-        Show action only (default true)
-  -vs string
-        Visual Studio's setup path (default ".")
+## 四、 使用
+
+### 4.1 vssc 命令
+
+```text {.line-numbers}
+$ vssc
+
+Copyright (c) 1999-2023 Not a dream Co., Ltd.
+visual studio setup file cleaner (vssc) 1.0.0, 2023-08-25
+
+Usage:
+  vssc [option] <visual studio setup path> [package list file]
+        clear obsolete Visual Studio Setup packages
+
+Option:
+      The first character of the option determines whether to only show the result or execute the real action.
+      The second one defines whether to statistic the directory of obsolete packages or not.
+      't' is true, 'f' is false.
+
+  -tt: default option, can be omitted. show only and statistic the result.
+  -tf: show only but not statistic the result.
+  -ft: clean and statistic the result.
+  -ff: clean but not to statistic the result.
+
+  otherwise: show this help.
 ```
 
-当忽略 pkg 或将其设置为空字符串时，将使用[版本 1 的操作逻辑](readme_cn_v1.md)。
+必须指定 `visual studio setup path` 才能工作。而 `package list file` 是可选的，该参数将使 `vssc` 以不同逻辑执行清理操作：
 
-### 2.2 执行过程
+- 提供该参数：对比 `visual studio setup path` 中的目录，存在于 `package list file` 则保留；不在其中的被认为是过期的，将被清除。
+- 省略该参数：分析 `visual studio setup path` 中的目录名，得到包名和版本号。版本号旧的将被清除。
 
-执行过程如下：
+两种方式可相互验证，经测试结果相同。使用`省略该参数`的方式更简单易用。
 
-1. 通常运行 `VS2019` 会自动发现新的小版本。**此时不更新**。
-1. 执行 `vs_community.exe --layout "f:\Software\vs2019-community"` 下载新版本发生变动的组件包。注意引号内的是安装程序路径。
-1. 如果中断或有其它错误发生，反复执行以上命令直到所有新的组件包全部下载完毕。
-1. 再次执行 `vs_community.exe --layout "f:\Software\vs2019-community"` 会检查一遍组件包是否完整。所有组件都被列在命令行窗口中。通过复制、粘贴（`Ctrl + A`，`Ctrl + C`从窗口中选择复制，再粘贴到文本文件中）的方式，将这总分内容保存到文本文件中，例如 `e:\temp\list.txt` 。该文件即为 `vssetup-cleaner.exe` 的 `pkg` 参数所需的 `package list file`。
-1. 执行 `vssetup-cleaner.exe -pkg="e:\temp\list.txt" -vs="f:\Software\vs2019-community" -show=false` 会将 `f:\Software\vs2019-community` 中的目录与 `e:\temp\list.txt` 中的组件名作对比，将过期不用的组件目录移动到 `f:\Software\vs2019-community` 下的 `_yyyy-mm-dd_HH-MM-ss` 备份目录中。
-1. 再次执行 `vs_community.exe --layout "f:\Software\vs2019-community"` 会检查一遍组件包是否完整。如果没有问题，可以手工删除备份目录。其实，本步可选。
-1. 执行 `vs_setup.exe` 安装更新即可。此时仍然会提示下载更新包，但点击继续后，下载过程瞬间完成。此操作支持离线更新。
+默认使用 `-tt` 选项，仅给出查到的过期包信息。若要真正清理，请使用 `-ft` 或 `-ff` 选项。
 
-对 Visual Studio 2019 community 16.9 安装包运行此程序后，释放了 6.4 GB 的空间。
+> 获得 `package list file` 的方法见下面说明。
+
+### 4.2 更新及清理过程
+
+更新及清理过程如下：
+
+1. 通常运行 `VS2019` 会自动发现新的小版本。**此时不要更新！**。
+1. 执行 `vs_community.exe --layout "f:\Software\vs2019-community"` 下载新版本发生变动的组件包。注意引号内的是安装程序路径，应根据实际情况填写。
+1. 如果中断或有其它错误发生，反复执行以上命令直到所有新的组件包全部下载完毕。注意不要关闭窗口。
+1. 本步保存 `package list file`。如果不想使用该文件则请忽略本步。通过复制、粘贴（`Ctrl + A`，`Ctrl + C`从窗口中选择复制，再粘贴到文本文件中）的方式，将这总分内容保存到文本文件中，例如 `e:\temp\list.txt` 。该文件即为 `vssc` 的`package list file`。
+1. 按前面的命令说明执行清理操作。如果需要实际执行，请使用 `-ft` 或 `-ff` 选项。
+1. 再次执行 `vs_community.exe --layout "f:\Software\vs2019-community"` 会检查一遍组件包是否完整。如果没有问题，可以手工删除备份目录。本步可选。
+1. 执行 `vs_setup.exe` 或启动 Visual Studio 后安装更新即可。此时仍然会提示下载更新包，但点击继续后，下载过程瞬间完成。此操作支持离线更新。
 
 **Enjoy!**

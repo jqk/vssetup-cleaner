@@ -2,69 +2,96 @@
 
 [中文版](readme_cn.md)
 
-## 1. What to solve
+## 1. What is it
 
-We have 2 ways to install Visual Studio:
+Visual Studio setup cleaner (vssc) is a command line tool for cleaning up outdated Visual Studio installation packages.
 
-- online installation.
-- download the selected components and then install it.
+It has only been tested on Windows 10/11 for Visual Studio 2019 Community. In theory it should be able to handle all versions from 2017 to 2022.
 
-We are discussing the second scenario.
+Since it is written in Go and does not use any OS-specific features, it should also be able to run on Mac.
 
-Every major version of Visual Studio will have some minor version updates. Each update changes only a small number of installation files. It's a waste of time to download all the components each time when the update is ready.
+## 2. What to solve
 
-So, download the newest installation file first, and then run:
+There are two ways to install Visual Studio:
+
+- Online installation.
+- Download the installation files locally and install from local.
+
+This article describes the **local installation** scenario.
+
+Each major version of Visual Studio will have multiple minor version upgrades. Each upgrade only upgrades some components rather than all installation files. Downloading the entire installation package each time is wasteful.
+
+Therefore, we should only download the updated parts each time. **Take the community edition as an example**, the command to run is the same as when downloading the installation package for the first time:
 
 ```bash
 vs_community.exe --layout "f:\Software\vs2019-community"
 ```
 
-`f:\Software\vs2019-community` is the directory where the installation files of previous version are placed. You should set it with your value.
+- `vs_community.exe` does not need to be the latest, it will automatically download the latest `vs_layout.exe` and run it.
+- `f:\Software\vs2019-community` is the directory where the installation package is located, should be filled in according to the actual situation.
 
-Running above command will only download the changed components. It's faster than downloading all the packages.
+The above command will only download updated components, which is much faster than downloading the entire version.
+However, this operation **does not delete the directories of old, no longer used components**, causing f:\Software\vs2019-community to grow larger and larger.
 
-The problem is it will not remove old version components. So the directory such as `f:\Software\vs2019-community` will go larger and larger.
+`vssc` finds these no longer used components, and moves them to a backup directory named `_yyyy-mm-dd_HH-MM-ss` generated according to the current time. After verification, they can be manually deleted.
 
-This project is build for cleaning the old component directories.
+## 3. Installation
 
-- It will create a backup directory named `_yyyy-mm-dd_HH-MM-ss` according to current time for backup.
-- Move old version component directories to the new created backup directory.
-- Then you can check it and **manually delete** the backup directory.
+There are two ways to install:
 
-## 2. How to use
+1. You can download the package from <https://github.com/jqk/vssetup-cleaner/releases>, unzip and run directly.
+2. Use [scoop](https://github.com/ScoopInstaller/Scoop). After installing scoop, execute:
+   - `scoop bucket add ajqk https://github/jqk/scoopbucket`
+   - `scoop install vssc`
 
-### 2.1 Visual Studio setup cleaner
+## 4. Usage
 
-- Clone the source code.
-- Build an executable and run it.
+### 4.1 vssc Command
 
-```cmd
-vssetup-cleaner.exe -h
-Usage of vssetup-cleaner.exe:
-  -pkg string
-        package list file
-  -show
-        Show action only (default true)
-  -vs string
-        Visual Studio's setup path (default ".")
+```text {.line-numbers}
+$ vssc
+
+Copyright (c) 1999-2023 Not a dream Co., Ltd.
+visual studio setup file cleaner (vssc) 1.0.0, 2023-08-25
+
+Usage:
+  vssc [option] <visual studio setup path> [package list file]
+        clear obsolete Visual Studio Setup packages
+
+Option:
+      The first character of the option determines whether to only show the result or execute the real action.
+      The second one defines whether to statistic the directory of obsolete packages or not.
+      't' is true, 'f' is false.
+
+  -tt: default option, can be omitted. show only and statistic the result.
+  -tf: show only but not statistic the result.
+  -ft: clean and statistic the result.
+  -ff: clean but not to statistic the result.
+
+  otherwise: show this help.
 ```
 
-[Version 1 process logic](readme_v1.md) is used when PKG is missing or set to an empty string.
+The `visual studio setup path` must be specified for `vssc` to work. The `package list file` is optional. Specifying this parameter causes `vssc` to clean up with different logic:
 
-### 2.2 Update step by step
+- If provided: `vssc` will compare the directories under `visual studio setup path` against the `package list file`. Directories not listed in the file will be considered outdated and removed.
+- If omitted: `vssc` will analyze the directory names under `visual studio setup path` to extract package name and version. Older versions will be removed.
 
-Run `vs_Community.exe --layout "f:\Software\vs2019-community"` again to verify everything is ok. It should not download any component. Then we can remove the backup directory to release the space.
+The two methods can validate each other and produce the same results in testing. Using the second method without the file parameter is simpler.
 
-1. Download local installation files by running `vs_community.exe --layout "f:\Software\vs2019-community"`.
-2. Install `VS2019` by running `vs_setup.exe`.
-3. `VS2019` will sent out notification when there's update available. **Don't update now.**.
-4. Download new packages by running `vs_community.exe --layout "f:\Software\vs2019-community"`.
-5. Repeat the above operation until download is successful.
-6. Run `vs_community.exe --layout "f:\Software\vs2019-community"` again. It will check the local packages and log all package names to command windows. Save the output to a file, for example, `e:\temp\list.txt` which will be used as the `package list file` for `vssetup-cleaner.exe`.
-7. Run `vssetup-cleaner.exe -pkg="e:\temp\list.txt" -vs="f:\Software\vs2019-community" -show=false`.It'll move old packages to the backup dir。
-8. Check the installation by running `vs_community.exe --layout "f:\Software\vs2019-community"` again.
-9. Update `VS2019` by running `vs_setup.exe`. Then delete backup dir.
+The default is to use the `-tt` option, which only prints the outdated packages found. To actually clean up, use `-ft` or `-ff`.
 
-The program released 6.4 GB for Visual Studio 2019 community 16.9 setup files.
+> See below for how to get the package list file.
+
+### 4.2 Update and Cleanup Process
+
+The update and cleanup process is:
+
+1. Running VS2019 normally will auto detect new minor versions. **_Do not update yet!_**
+2. Run `vs_community.exe --layout "f:\Software\vs2019-community"` to download new component packages. Note the path in quotes is where VS is installed, update it accordingly.
+3. If interrupted or errors occur, repeat the above command until all new packages are downloaded. Do not close the window.
+4. Save the `package list file`. Ignore this step if not using this file. Copy and paste (`Ctrl + A`, `Ctrl + C` to copy from window, paste into a text file e.g. e:\temp\list.txt) to save the list. This is the `package list file` for `vssc`.
+5. Run cleanup using `vssc` as described in the commands. Use `-ft` or `-ff` to actually execute cleanup.
+6. Run `vs_community.exe --layout "f:\Software\vs2019-community` again to verify component packages. Delete the backup folder manually if no issues. Optional.
+7. Run `vs_setup.exe` or start VS and install the update. Downloading will finish instantly. Offline update is supported.
 
 **Enjoy!**
