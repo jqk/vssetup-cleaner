@@ -48,14 +48,7 @@ func Clean(setupPath string, listFilename string, handler ObsoletePackageHandler
 	info := &CleanInfo{}
 	// 将可能的相对路径转换为绝对路径，并创建备份目录名称。
 	info.SetupPath, _ = filepath.Abs(setupPath)
-	info.BackupPath = path.Join(info.SetupPath, time.Now().Format("_2006-01-02_15-04-05"))
-
-	if !showOnly {
-		// 确保备份目录可用。
-		if err := os.Mkdir(info.BackupPath, os.ModeDir); err != nil {
-			return nil, err
-		}
-	}
+	info.BackupPath, _ = filepath.Abs(path.Join(setupPath, time.Now().Format("_2006-01-02_15-04-05")))
 
 	var errOuter error
 	sw := timeutils.Stopwatch{}
@@ -73,6 +66,13 @@ func Clean(setupPath string, listFilename string, handler ObsoletePackageHandler
 			return err
 		}
 
+		if !showOnly && len(info.Packages) > 0 {
+			// 只有必要时才创建备份目录，确保其可用。
+			if err := os.Mkdir(info.BackupPath, os.ModeDir); err != nil {
+				return err
+			}
+		}
+
 		// 逐一处理旧包。
 		for _, pkg := range info.Packages {
 			if needDirStat {
@@ -81,7 +81,7 @@ func Clean(setupPath string, listFilename string, handler ObsoletePackageHandler
 					return err
 				}
 			}
-			// 调用回调函数处理旧包。返回的错误如果是 SkipAll 或 SkipDir，则结束处理。
+			// 调用回调函数处理旧包。返回任何错误均结束处理。
 			if err = handler(pkg); err != nil {
 				return err
 			}
@@ -96,6 +96,7 @@ func Clean(setupPath string, listFilename string, handler ObsoletePackageHandler
 	})
 
 	if errOuter == filepath.SkipAll || errOuter == filepath.SkipDir {
+		// SkipAll 或 SkipDir 被认为是正常的信号。
 		errOuter = nil
 	}
 	return info, errOuter

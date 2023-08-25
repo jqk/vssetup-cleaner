@@ -52,6 +52,21 @@ type CleanInfo struct {
 }
 
 /*
+Stat returns the file statistics of a clean process.
+
+Stat 返回清理过程的文件统计信息。
+*/
+func (c *CleanInfo) Stat() (dirCount int, fileCount int, size int64) {
+	for _, p := range c.Packages {
+		dirCount += p.DirCount
+		fileCount += p.FileCount
+		size += p.Size
+	}
+
+	return
+}
+
+/*
 getPackageInfo returns package name and version according to given dir name.
 
 See test for more detail.
