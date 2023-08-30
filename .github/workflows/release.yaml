@@ -8,8 +8,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    # runs-on: ubuntu-latest
+    # 只使用 ubuntu，无法编译 macos。
+    runs-on: [ubuntu-latest, macos-latest] 
+    
     permissions:
       contents: write
 
@@ -23,6 +25,11 @@ jobs:
             # 因为不同平台用的内容相同，所以也可以使用 env 定义在外层，但集中一起更直观。
             artifactname: "vssc"
             goarch: amd64
+          - goos: macos
+            artifactext: ""
+            os: macos-latest
+            artifactname: "vssc"
+            goarch: arm64
 
     steps:
       - name: Get Tag Version
