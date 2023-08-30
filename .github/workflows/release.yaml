@@ -33,27 +33,28 @@ jobs:
             goarch: arm64
 
     steps:
-      - name: Get Tag Version
-        id: get_version_new
-        # 首先将  ${{ github.ref }}  的值赋给  tag_name  变量。
-        # 然后，使用字符串截取功能 tag_name=${tag_name#refs/tags/} 来移除 tag_name 中的前缀 "refs/tags/"。
-        # 最后将其保存到环境变量 program_version 中。
-        run: |
-            tag_name=${{ github.ref }}
-            tag_name=${tag_name#refs/tags/}
-            echo "program_version=${tag_name}" >> $GITHUB_ENV
+    #   - name: Get Tag Version
+    #     id: get_version_new
+    #     # 首先将  ${{ github.ref }}  的值赋给  tag_name  变量。
+    #     # 然后，使用字符串截取功能 tag_name=${tag_name#refs/tags/} 来移除 tag_name 中的前缀 "refs/tags/"。
+    #     # 最后将其保存到环境变量 program_version 中。
+    #     run: |
+    #         tag_name=${{ github.ref }}
+    #         tag_name=${tag_name#refs/tags/}
+    #         echo "program_version=${tag_name}" >> $GITHUB_ENV
 
-      - name: Checkout
-        uses: actions/checkout@v3
+    #   - name: Checkout
+    #     uses: actions/checkout@v3
 
-      - name: Update go.sum
-        run: go mod tidy
+    #   - name: Update go.sum
+    #     run: go mod tidy
 
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: ">=1.18.0"
-          cache: true
+    #   - name: Setup Go
+    #     uses: actions/setup-go@v3
+    #     with:
+    #       go-version: ">=1.18.0"
+    #       cache: true
+      - uses: pre-build.yaml
 
       - name: Build for windows
         if: matrix.goos == 'windows'
@@ -74,14 +75,16 @@ jobs:
             CXX: o64-clang++ 
         run: go build -o ${{ matrix.artifactname }}${{ matrix.artifactext }}
       
-      - name: Packaging
-        # 即使在 windows 中执行 github action，也不需要提前安装 tar，已内置。
-        # 以下针对 program_version 的警告可忽略，只要保证前面确实在环境变量中有所定义。
-        # run: tar czf  ${{ matrix.artifactname }}-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.program_version }}.tgz ${{ matrix.artifactname }}${{ matrix.artifactext }}
-        run: zip -r ${{ matrix.artifactname }}-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.program_version }}.zip ${{ matrix.artifactname }}${{ matrix.artifactext }}
+      - uses: post-build.yaml
 
-      - name: Create GitHub release from tag
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            *.zip
+    #   - name: Packaging
+    #     # 即使在 windows 中执行 github action，也不需要提前安装 tar，已内置。
+    #     # 以下针对 program_version 的警告可忽略，只要保证前面确实在环境变量中有所定义。
+    #     # run: tar czf  ${{ matrix.artifactname }}-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.program_version }}.tgz ${{ matrix.artifactname }}${{ matrix.artifactext }}
+    #     run: zip -r ${{ matrix.artifactname }}-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.program_version }}.zip ${{ matrix.artifactname }}${{ matrix.artifactext }}
+
+    #   - name: Create GitHub release from tag
+    #     uses: softprops/action-gh-release@v1
+    #     with:
+    #       files: |
+    #         *.zip
