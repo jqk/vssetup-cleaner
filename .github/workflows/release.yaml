@@ -27,7 +27,7 @@ jobs:
             artifactext: ""
             os: macos-latest
             artifactname: "vssc"
-            goarch: amd64
+            goarch: arm64
 
     steps:
       - name: Get Tag Version
