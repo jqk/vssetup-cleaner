@@ -41,14 +41,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      # 比较有意思的是，作为代码洁癖患者，我将 go.sum 放到 .gitignore 中了，反正每次若依赖有变化，
+      # 都要通过 go mod tidy 命令更新。
+      # 没想到的是，如果不先执行 go mod tidy 命令，在执行后面的 Setup Go 命令时，会报：
+      # Dependencies file is not found in /home/runner/work/vssetup-cleaner/vssetup-cleaner. 
+      # Supported file pattern: go.sum
+      # 所以还得将 Update go sum 移到此处。有趣的是，还没 Setup Go 呢，已经要执行 go mod tidy 命令了，而且还成功了。
+      # 看着多少有些别扭，还是将 go.sum 加回到库中而省了本 step 吧。
+      # - name: Update go.sum
+      #   run: go mod tidy
+
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version: ">=1.18.0"
           cache: true
-
-      - name: Update go.sum
-        run: go mod tidy
 
       - name: Build for windows
         if: matrix.goos == 'windows'
@@ -105,9 +112,6 @@ jobs:
         with:
           go-version: ">=1.18.0"
           cache: true
-
-      - name: Update go.sum
-        run: go mod tidy
 
       - name: Build for macOS amd64
         if: matrix.goos == 'macos' && matrix.goarch == 'amd64'  
