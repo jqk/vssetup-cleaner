@@ -7,11 +7,8 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
-  build:
-    # runs-on: ubuntu-latest
-    # 只使用 ubuntu，无法编译 macos。
-    # runs-on: [ubuntu-latest, macos-latest] 
-    runs-on: macos-latest
+  build-windows:
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
@@ -20,34 +17,29 @@ jobs:
       matrix:
         # 定义生成目标的操作系统的相关变量，即使有重复，也要分别定义，如 goarch。
         include:
-        #   - goos: windows
-        #     artifactext: ".exe"
-        #     os: windows-latest
-        #     # 因为不同平台用的内容相同，所以也可以使用 env 定义在外层，但集中一起更直观。
-        #     artifactname: "vssc"
-        #     goarch: amd64
-          - goos: macos
-            artifactext: ""
-            os: macos-latest
+          - goos: windows
+            artifactext: ".exe"
+            os: windows-latest
+            # 因为不同平台用的内容相同，所以也可以使用 env 定义在外层，但集中一起更直观。
             artifactname: "vssc"
-            goarch: arm64
+            goarch: amd64
 
     steps:
-    #   - name: Get Tag Version
-    #     id: get_version_new
-    #     # 首先将  ${{ github.ref }}  的值赋给  tag_name  变量。
-    #     # 然后，使用字符串截取功能 tag_name=${tag_name#refs/tags/} 来移除 tag_name 中的前缀 "refs/tags/"。
-    #     # 最后将其保存到环境变量 program_version 中。
-    #     run: |
-    #         tag_name=${{ github.ref }}
-    #         tag_name=${tag_name#refs/tags/}
-    #         echo "program_version=${tag_name}" >> $GITHUB_ENV
+      - name: Get Tag Version
+        id: get_version_new
+        # 首先将  ${{ github.ref }}  的值赋给  tag_name  变量。
+        # 然后，使用字符串截取功能 tag_name=${tag_name#refs/tags/} 来移除 tag_name 中的前缀 "refs/tags/"。
+        # 最后将其保存到环境变量 program_version 中。
+        run: |
+            tag_name=${{ github.ref }}
+            tag_name=${tag_name#refs/tags/}
+            echo "program_version=${tag_name}" >> $GITHUB_ENV
 
-    #   - name: Checkout
-    #     uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    #   - name: Update go.sum
-    #     run: go mod tidy
+      - name: Update go.sum
+        run: go mod tidy
 
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -62,6 +54,57 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
+      
+      - name: Packaging
+        # 即使在 windows 中执行 github action，也不需要提前安装 tar，已内置。
+        # 以下针对 program_version 的警告可忽略，只要保证前面确实在环境变量中有所定义。
+        # run: tar czf  ${{ matrix.artifactname }}-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.program_version }}.tgz ${{ matrix.artifactname }}${{ matrix.artifactext }}
+        run: zip -r ${{ matrix.artifactname }}-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.program_version }}.zip ${{ matrix.artifactname }}${{ matrix.artifactext }}
+
+      - name: Create GitHub release from tag
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            *.zip
+
+  build-macos:
+    runs-on: macos-latest
+
+    permissions:
+      contents: write
+
+    strategy:
+      matrix:
+        # 定义生成目标的操作系统的相关变量，即使有重复，也要分别定义，如 goarch。
+        include:
+          - goos: macos
+            artifactext: ""
+            os: macos-latest
+            artifactname: "vssc"
+            goarch: arm64
+
+    steps:
+      - name: Get Tag Version
+        id: get_version_new
+        # 首先将  ${{ github.ref }}  的值赋给  tag_name  变量。
+        # 然后，使用字符串截取功能 tag_name=${tag_name#refs/tags/} 来移除 tag_name 中的前缀 "refs/tags/"。
+        # 最后将其保存到环境变量 program_version 中。
+        run: |
+            tag_name=${{ github.ref }}
+            tag_name=${tag_name#refs/tags/}
+            echo "program_version=${tag_name}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Update go.sum
+        run: go mod tidy
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ">=1.18.0"
+          cache: true
 
       - name: Build for macOS amd64
         if: matrix.goos == 'macos' && matrix.goarch == 'amd64'  
