@@ -47,7 +47,7 @@ jobs:
       # Dependencies file is not found in /home/runner/work/vssetup-cleaner/vssetup-cleaner. 
       # Supported file pattern: go.sum
       # 所以还得将 Update go sum 移到此处。有趣的是，还没 Setup Go 呢，已经要执行 go mod tidy 命令了，而且还成功了。
-      # 看着多少有些别扭，还是将 go.sum 加回到库中而省了本 step 吧。
+      # 看着多少有些别扭，还是将 go.sum 加回到库中而将本 step 放到 Setup Go 之后吧。
       # - name: Update go.sum
       #   run: go mod tidy
 
@@ -56,6 +56,9 @@ jobs:
         with:
           go-version: ">=1.18.0"
           cache: true
+
+      - name: Update go.sum
+        run: go mod tidy
 
       - name: Build for windows
         if: matrix.goos == 'windows'
@@ -113,6 +116,9 @@ jobs:
           go-version: ">=1.18.0"
           cache: true
 
+      - name: Update go.sum
+        run: go mod tidy
+  
       - name: Build for macOS amd64
         if: matrix.goos == 'macos' && matrix.goarch == 'amd64'  
         run: go build -o ${{ matrix.artifactname }}${{ matrix.artifactext }}
