@@ -1,14 +1,51 @@
-steps:
+name: Release Workflow
 
-  - name: Packaging
-    # 即使在 windows 中执行 github action，也不需要提前安装 tar，已内置。
-    # 以下针对 program_version 的警告可忽略，只要保证前面确实在环境变量中有所定义。
-    # run: tar czf  ${{ matrix.artifactname }}-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.program_version }}.tgz ${{ matrix.artifactname }}${{ matrix.artifactext }}
-    run: zip -r ${{ matrix.artifactname }}-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.program_version }}.zip ${{ matrix.artifactname }}${{ matrix.artifactext }}
+on:
+  release:
+    types:
+      - created
 
-  - name: Create GitHub release from tag
-    uses: softprops/action-gh-release@v1
-    with:
-      files: |
-        *.zip
-        
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pre-Build Step
+        # 引用 pre-build 步骤的别名
+        <<: *pre-build
+
+      - name: Job 1 Step
+        # 在这里定义 job1 的具体操作
+        # ...
+
+      - name: Post-Build Step
+        # 引用 post-build 步骤的别名
+        <<: *post-build
+
+  job2:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pre-Build Step
+        # 引用 pre-build 步骤的别名
+        <<: *pre-build
+
+      - name: Job 2 Step
+        # 在这里定义 job2 的具体操作
+        # ...
+
+      - name: Post-Build Step
+        # 引用 post-build 步骤的别名
+        <<: *post-build
+
+# 定义 pre-build 步骤的锚点和别名
+pre-build: &pre-build
+  - name: Pre-Build Step
+    # 在这里定义 pre-build 步骤的具体操作
+    # ...
+
+# 定义 post-build 步骤的锚点和别名
+post-build: &post-build
+  - name: Post-Build Step
+    # 在这里定义 post-build 步骤的具体操作
+    # ...

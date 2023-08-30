@@ -54,7 +54,7 @@ jobs:
     #     with:
     #       go-version: ">=1.18.0"
     #       cache: true
-      - uses: pre-build.yaml
+      - uses: ./pre-build.yaml
 
       - name: Build for windows
         if: matrix.goos == 'windows'
@@ -88,3 +88,18 @@ jobs:
     #     with:
     #       files: |
     #         *.zip
+
+  build-macos:
+      # runs-on: ubuntu-latest
+      # 只使用 ubuntu，无法编译 macos。
+      # runs-on: [ubuntu-latest, macos-latest] 
+      runs-on: macos-latest
+  
+      permissions:
+        contents: write
+
+shared-script:
+
+            steps:
+            
+              - name: Get Version 
