@@ -40,8 +40,11 @@ vs_community.exe --layout "f:\Software\vs2019-community"
 
 有两种方法进行安装：
 
-1. 可以从 <https://github.com/jqk/vssetup-cleaner/releases> 下载程序包，解压后直接运行。
-2. 使用 [scoop](https://github.com/ScoopInstaller/Scoop) 。在安装完 scoop 后执行：
+1. 编译源码：
+   - `git clone https://github.com/jqk/vssetup-cleaner.git`.
+   - `go build`. 该命令在 Windows 下生成 `vssc.exe`。
+2. 可以从 <https://github.com/jqk/vssetup-cleaner/releases> 下载程序包，解压后直接运行。
+3. 使用 [scoop](https://github.com/ScoopInstaller/Scoop) 。在安装完 scoop 后执行：
    - `scoop bucket add ajqk https://github/jqk/scoopbucket`
    - `scoop install vssc`
 

@@ -37,10 +37,13 @@ However, this operation **does not delete the directories of old, no longer used
 
 ## 3. Installation
 
-There are two ways to install:
+There are three ways to install:
 
-1. You can download the package from <https://github.com/jqk/vssetup-cleaner/releases>, unzip and run directly.
-2. Use [scoop](https://github.com/ScoopInstaller/Scoop). After installing scoop, execute:
+1. Build the source code, excute:
+   - `git clone https://github.com/jqk/vssetup-cleaner.git`.
+   - `go build`. It will generate `vssc.exe` in Windows.
+2. You can download the package from <https://github.com/jqk/vssetup-cleaner/releases>, unzip and run directly.
+3. Use [scoop](https://github.com/ScoopInstaller/Scoop). After installing scoop, execute:
    - `scoop bucket add ajqk https://github/jqk/scoopbucket`
    - `scoop install vssc`
 
