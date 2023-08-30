@@ -54,7 +54,7 @@ jobs:
     #     with:
     #       go-version: ">=1.18.0"
     #       cache: true
-      - uses: ./pre-build.yaml
+      - uses: ./.github/steps/pre-build.yaml
 
       - name: Build for windows
         if: matrix.goos == 'windows'
@@ -75,7 +75,7 @@ jobs:
             CXX: o64-clang++ 
         run: go build -o ${{ matrix.artifactname }}${{ matrix.artifactext }}
       
-      - uses: ./post-build.yaml
+      - uses: ./.github/steps/post-build.yaml
 
     #   - name: Packaging
     #     # 即使在 windows 中执行 github action，也不需要提前安装 tar，已内置。
