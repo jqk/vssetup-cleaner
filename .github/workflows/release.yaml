@@ -10,8 +10,9 @@ jobs:
   build:
     # runs-on: ubuntu-latest
     # 只使用 ubuntu，无法编译 macos。
-    runs-on: [ubuntu-latest, macos-latest] 
-    
+    # runs-on: [ubuntu-latest, macos-latest] 
+    runs-on: macos-latest
+
     permissions:
       contents: write
 
@@ -19,12 +20,12 @@ jobs:
       matrix:
         # 定义生成目标的操作系统的相关变量，即使有重复，也要分别定义，如 goarch。
         include:
-          - goos: windows
-            artifactext: ".exe"
-            os: windows-latest
-            # 因为不同平台用的内容相同，所以也可以使用 env 定义在外层，但集中一起更直观。
-            artifactname: "vssc"
-            goarch: amd64
+        #   - goos: windows
+        #     artifactext: ".exe"
+        #     os: windows-latest
+        #     # 因为不同平台用的内容相同，所以也可以使用 env 定义在外层，但集中一起更直观。
+        #     artifactname: "vssc"
+        #     goarch: amd64
           - goos: macos
             artifactext: ""
             os: macos-latest
