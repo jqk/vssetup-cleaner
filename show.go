@@ -16,9 +16,9 @@ var (
 func showVersion() {
 	white.Println()
 	white.Println("Copyright (c) 1999-2023 Not a dream Co., Ltd.")
-	white.Print("visual studio setup file cleaner (")
+	white.Print("Visual Studio setup file cleaner (")
 	yellow.Print("vssc")
-	white.Println(") 1.0.0, 2023-08-25\n")
+	white.Println(") 1.0.1, 2023-09-08\n")
 }
 
 func showHelp() {
@@ -31,13 +31,13 @@ func showHelp() {
 	white.Println("      't' is true, 'f' is false.\n")
 
 	yellow.Print("  -tt: default option, can be omitted. ")
-	white.Println("show only and statistic the result.")
+	white.Println("Display obsolete packages and their summary.")
 	yellow.Print("  -tf: ")
-	white.Println("show only but not statistic the result.")
+	white.Println("Display obsolete packages only.")
 	yellow.Print("  -ft: ")
-	white.Println("clean and statistic the result.")
+	white.Println("Clean obsolete packages and display their summary.")
 	yellow.Print("  -ff: ")
-	white.Println("clean but not to statistic the result.")
+	white.Println("Clean obsolete packages only.")
 
 	yellow.Println()
 	yellow.Println("  otherwise: show this help.")

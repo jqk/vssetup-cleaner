@@ -57,7 +57,7 @@ vs_community.exe --layout "f:\Software\vs2019-community"
 $ vssc
 
 Copyright (c) 1999-2023 Not a dream Co., Ltd.
-visual studio setup file cleaner (vssc) 1.0.0, 2023-08-25
+Visual Studio setup file cleaner (vssc) 1.0.1, 2023-09-08
 
 Usage:
   vssc [option] <visual studio setup path> [package list file]
@@ -68,10 +68,10 @@ Option:
       The second one defines whether to statistic the directory of obsolete packages or not.
       't' is true, 'f' is false.
 
-  -tt: default option, can be omitted. show only and statistic the result.
-  -tf: show only but not statistic the result.
-  -ft: clean and statistic the result.
-  -ff: clean but not to statistic the result.
+  -tt: Default option, can be omitted. Display obsolete packages and their summary.
+  -tf: Display obsolete packages only.
+  -ft: Clean obsolete packages and display their summary.
+  -ff: Clean obsolete packages only.
 
   otherwise: show this help.
 ```

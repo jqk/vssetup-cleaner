@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		showError(err)
 		showHelp()
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	showStarting(c)
@@ -29,7 +29,7 @@ func main() {
 	cleanInfo, err := Clean(c.setupPath, c.listFilename, showObsoletePackage, c.showOnly, c.needDirStat)
 	if err != nil {
 		showError(err)
-		os.Exit(1)
+		os.Exit(2)
 	}
 
 	showCleanResult(c, cleanInfo)
